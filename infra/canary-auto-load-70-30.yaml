@@ -1,0 +1,113 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: user-interface #this is the Golang version
+spec:
+  selector:
+    matchLabels:
+      app: user-interface
+  replicas: 1
+  template: # template for the pods
+    metadata:
+      labels:
+        app: user-interface
+        version: golang-safe
+    spec:
+      containers:
+      - image: k3d-trivago-local-registry:34281/trivago-go:latest
+        name: user-interface        
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8080
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: user-interface-risky-version  #this is the Java version
+spec:
+  selector:
+    matchLabels:
+      app: user-interface
+  replicas: 1
+  template: # template for the pods
+    metadata:
+      labels:
+        app: user-interface
+        version: java-risky
+    spec:
+      containers:
+      - name: user-interface
+        image: k3d-trivago-local-registry:34281/trivago-java:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8080
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: busybox
+spec:
+  selector:
+    matchLabels:
+      app: busybox
+  replicas: 1
+  template: # template for the pods
+    metadata:
+      labels:
+        app: busybox
+    spec:
+      containers:
+      - name: busybox
+        image: busybox
+        imagePullPolicy: Always
+        command: ["sh", "-c", "while true; do wget -O- http://user-interface-service.default.svc.cluster.local:8080; sleep 1; done"]
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: user-interface-service
+spec:
+  selector:
+    app: user-interface
+  ports:
+    - name: http
+      port: 8080
+  type: ClusterIP
+
+---
+kind: VirtualService
+apiVersion: networking.istio.io/v1alpha3
+metadata:
+  name: user-interface-service
+  namespace: default
+spec:
+  hosts:
+    - user-interface-service.default.svc.cluster.local
+  http:
+    - route:
+        - destination:
+            host: user-interface-service.default.svc.cluster.local
+            subset: golang-safe
+          weight: 70
+        - destination:
+            host: user-interface-service.default.svc.cluster.local
+            subset: java-risky
+          weight: 30
+
+---
+kind: DestinationRule
+apiVersion: networking.istio.io/v1alpha3
+metadata:
+  name: user-interface-service
+  namespace: default
+spec:
+  host: user-interface-service.default.svc.cluster.local
+  subsets:
+    - labels:
+        version: golang-safe
+      name: golang-safe
+    - labels:
+        version: java-risky
+      name: java-risky
+

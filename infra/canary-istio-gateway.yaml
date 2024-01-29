@@ -1,0 +1,117 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: user-interface-igw #this is the Golang version
+spec:
+  selector:
+    matchLabels:
+      app: user-interface-igw
+  replicas: 1
+  template: # template for the pods
+    metadata:
+      labels:
+        app: user-interface-igw
+        version: golang-safe
+    spec:
+      containers:
+      - image: k3d-trivago-local-registry:34281/trivago-go:latest
+        name: user-interface-igw    
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8080
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: user-interface-risky-version-igw #this is the Java version
+spec:
+  selector:
+    matchLabels:
+      app: user-interface-igw
+  replicas: 1
+  template: # template for the pods
+    metadata:
+      labels:
+        app: user-interface-igw
+        version: java-risky
+    spec:
+      containers:
+      - name: user-interface-igw
+        image: k3d-trivago-local-registry:34281/trivago-java:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: user-interface-service-igw
+spec:
+  selector:
+    app: user-interface-igw
+  ports:
+    - name: http
+      port: 8080
+  type: ClusterIP
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: Gateway
+metadata:
+  name: ingress-gateway-configuration
+spec:
+  # Istio Ingress Gateway Pod which is exists by default in cluster sitting there doing nothing... 
+  # But with this configuration going in action :-D => mTaghadosi
+  selector:
+    istio: ingressgateway
+  servers:
+  - port:
+      number: 8080
+      name: http
+      protocol: HTTP
+    hosts:
+    - "*"   # external DNS name
+---
+kind: VirtualService
+apiVersion: networking.istio.io/v1alpha3
+metadata:
+  name: user-interface-service-igw
+  namespace: default
+spec:
+  hosts:
+    # - user-interface-service-igw.default.svc.cluster.local
+      - "*"
+  gateways:
+    - ingress-gateway-configuration
+  http:
+    - route:
+        - destination:
+            host: user-interface-service-igw.default.svc.cluster.local
+            subset: golang-safe
+          headers:
+            request:
+              set:
+                x-trv-heritage: "golang"
+          weight: 70
+        - destination:
+            host: user-interface-service-igw.default.svc.cluster.local
+            subset: java-risky
+          headers:
+            request:
+              set:
+                x-trv-heritage: "java"
+          weight: 30
+---
+kind: DestinationRule
+apiVersion: networking.istio.io/v1alpha3
+metadata:
+  name: user-interface-service-igw
+  namespace: default
+spec:
+  host: user-interface-service-igw.default.svc.cluster.local
+  subsets:
+    - labels:
+        version: golang-safe
+      name: golang-safe
+    - labels:
+        version: java-risky
+      name: java-risky
