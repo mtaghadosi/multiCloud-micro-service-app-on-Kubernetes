@@ -1,5 +1,5 @@
-# Trivago's case study implementation guide
-#### This file contains all the necessary information’s and actions about my decisions regarding to Trivago case study implementation and also information about how to prepare the environment. 
+#  TinTa's case study implementation guide
+#### This file contains all the necessary information’s and actions about my decisions regarding to  TinTa case study implementation and also information about how to prepare the environment. 
 * #### As you are seeing in below gif, this will deploy two type of deployment into a k3d Kubernetes local cloud. one using `Istio-Gateway` ingress along side with another (as plus) an internal service feeding by a simple busybox deployment. (More demonstration info in meda folder)
 
 * #### Both Deployment demonstrations have traffic shaping configuration in a way that 70% goes to Golang version and another 30% goes to Java version.
@@ -30,7 +30,7 @@ There is two methodes for deploying this on k3d cluster:
 
 #### 1. Using `install.sh` script
 1. Copy and extract project folder in `HOME` directory. Navigate inside the project directory.
-2. Ensure that you are in root of the project directory with `pwd` command. You should see: `home/$USER/trivago-case-study`
+2. Ensure that you are in root of the project directory with `pwd` command. You should see: `home/$USER/tinta-case-study`
 3. Run `chmod +x install.sh`
 4. Deploy application by running `./install.sh`
 5. During the script installation please wait while the cluster will be up and running do not close the script. It usually takes arround five minutes to finish please be patient during installation.
@@ -40,10 +40,10 @@ There is two methodes for deploying this on k3d cluster:
 Simply copy and paste all below commands one by one. Avoid changing image and/or other components's names.
 1. Nagivate to project root. 
 2. Create a local image registry: 
-   - `k3d registry create trivago-local-registry --port 34281 --volume $SCRIPT_DIR/image-registry-data/:/var/lib/registry`
+   - `k3d registry create tinta-local-registry --port 34281 --volume $SCRIPT_DIR/image-registry-data/:/var/lib/registry`
 
 3. Create a k3d cluster using k3d-config.yaml file in infra folder and provide the local registry to it:
-   - `k3d cluster create --config infra/k3d-config.yaml --registry-use k3d-trivago-local-registry:34281`
+   - `k3d cluster create --config infra/k3d-config.yaml --registry-use k3d-tinta-local-registry:34281`
 
 4. Install Istio by simply applying below yamls in order:
    - `kubectl apply -f infra/istio+addons/istio-init.yaml`
@@ -53,15 +53,15 @@ Simply copy and paste all below commands one by one. Avoid changing image and/or
 
 5. Build and push Application docker images:
    - `cd apps/java-webserver`
-   - `docker build -t localhost:34281/trivago-java:latest .`
-   - `docker push localhost:34281/trivago-java:latest`
+   - `docker build -t localhost:34281/tinta-java:latest .`
+   - `docker push localhost:34281/tinta-java:latest`
    - `cd .. && cd .. && cd apps/golang-webserver`
-   - `docker build -t localhost:34281/trivago-go:latest .`
-   - `docker push localhost:34281/trivago-go:latest`
+   - `docker build -t localhost:34281/tinta-go:latest .`
+   - `docker push localhost:34281/tinta-go:latest`
    - `cd .. && cd .. `
 
-6. Check if you are in project's root directory then Install Trivago app via Helm package: 
-   - `helm install trivaago-helm trivago-helm-0.1.0.tgz`
+6. Check if you are in project's root directory then Install tinta app via Helm package: 
+   - `helm install trivaago-helm tinta-helm-0.1.0.tgz`
 
 7. Wait for the Pods to come online:
    - `kubectl get pods`
@@ -72,7 +72,7 @@ Simply copy and paste all below commands one by one. Avoid changing image and/or
 9. Run 100 request againist / path: (be carefull about crashing the cluster)
    - `for ((i=1; i<=100; i++)); do curl http://$LB_IP:31380/; sleep 0.1; done`
 10. Acces the application and other components like below where the <CLUSTER_IP> is the ip you gathered in 8th stage:
-   - Trivago Deployment: http://<CLUSTER_IP>:31380/
+   - tinta Deployment: http://<CLUSTER_IP>:31380/
    - Kiali: http://<CLUSTER_IP>:31000/
    - Jaeger: http://<CLUSTER_IP>.3:31001/
    - Grafana: http://<CLUSTER_IP>:31002/

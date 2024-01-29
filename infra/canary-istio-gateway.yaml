@@ -14,7 +14,7 @@ spec:
         version: golang-safe
     spec:
       containers:
-      - image: k3d-trivago-local-registry:34281/trivago-go:latest
+      - image: k3d-tinta-local-registry:34281/tinta-go:latest
         name: user-interface-igw    
         imagePullPolicy: Always
         ports:
@@ -37,7 +37,7 @@ spec:
     spec:
       containers:
       - name: user-interface-igw
-        image: k3d-trivago-local-registry:34281/trivago-java:latest
+        image: k3d-tinta-local-registry:34281/tinta-java:latest
         imagePullPolicy: Always
         ports:
         - containerPort: 8080

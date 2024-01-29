@@ -13,13 +13,13 @@ fi
 
 # Creating a local image registry
 registry_output=$(k3d registry ls)
-if echo "$registry_output" | grep -q "k3d-trivago-local-registry"; then
-    echo "k3d-trivago-local-registry already exists. Skipping installation."
+if echo "$registry_output" | grep -q "k3d-tinta-local-registry"; then
+    echo "k3d-tinta-local-registry already exists. Skipping installation."
 else
-    if k3d registry create trivago-local-registry --port 34281 --volume $SCRIPT_DIR/image-registry-data/:/var/lib/registry; then
-        echo -e "${ORANGE}Trivago local image registry was created successfully!${NC}"
+    if k3d registry create tinta-local-registry --port 34281 --volume $SCRIPT_DIR/image-registry-data/:/var/lib/registry; then
+        echo -e "${ORANGE}tinta local image registry was created successfully!${NC}"
     else
-        echo -e "${ORANGE}Error: Failed to create Trivago image registry! Is the registry already exists? ${NC}"
+        echo -e "${ORANGE}Error: Failed to create tinta image registry! Is the registry already exists? ${NC}"
         exit 1
     fi
 fi
@@ -29,14 +29,14 @@ echo
 echo -e "${ORANGE}---------------------------------------"
 # Creating K3d cluster
 cluster_output=$(k3d cluster ls)
-if echo "$cluster_output" | grep -q "trivago-cluster-tinta"; then
-        echo "trivago-cluster-tinta is already exists. Deletting it..."
-        k3d cluster delete trivago-cluster-tinta
+if echo "$cluster_output" | grep -q "tinta-cluster-tinta"; then
+        echo "tinta-cluster-tinta is already exists. Deletting it..."
+        k3d cluster delete tinta-cluster-tinta
 fi
-if k3d cluster create --config $SCRIPT_DIR/infra/k3d-config.yaml --registry-use k3d-trivago-local-registry:34281; then
+if k3d cluster create --config $SCRIPT_DIR/infra/k3d-config.yaml --registry-use k3d-tinta-local-registry:34281; then
     echo -e "${ORANGE}Cluster created successfully!${NC}"
 else
-    echo -e "${ORANGE}Error: Failed to create Trivago cluster. Check above logs.${NC}"
+    echo -e "${ORANGE}Error: Failed to create tinta cluster. Check above logs.${NC}"
     exit 1
 fi
 
@@ -51,7 +51,7 @@ while true; do
 
     # Check if all kube-system pods are "Running" except helm ones!
     if echo "$pod_status" | grep -v "helm" | grep -q " 0/"; then
-        echo -e "${ORANGE}Waiting for Cluster: trivago-cluster-tinta...${NC}"
+        echo -e "${ORANGE}Waiting for Cluster: tinta-cluster-tinta...${NC}"
         sleep 3  # Adjust the sleep duration as needed
     else
         echo -e "${ORANGE}DONE. All pods are up!${NC}"
@@ -63,17 +63,17 @@ echo
 echo -e "${ORANGE}---------------------------------------"
 echo -e "${ORANGE}Building Java microservice...${NC}"
 cd $SCRIPT_DIR/apps/java-webserver
-docker build -t localhost:34281/trivago-java:latest .
+docker build -t localhost:34281/tinta-java:latest .
 sleep 2 #why wait? this is for the delay between build and push sometime file-system can act tricky when pulling images instantly after pushing them.
 echo -e "${ORANGE}Pushing Java microservice to local image repository...${NC}"
-docker push localhost:34281/trivago-java:latest
+docker push localhost:34281/tinta-java:latest
 
 echo -e "${ORANGE}Building Golang microservice...${NC}"
 cd $SCRIPT_DIR/apps/golang-webserver
-docker build -t localhost:34281/trivago-go:latest .
+docker build -t localhost:34281/tinta-go:latest .
 sleep 2
 echo -e "${ORANGE}Pushing Golang microservice to local image repository...${NC}"
-docker push localhost:34281/trivago-go:latest
+docker push localhost:34281/tinta-go:latest
 
 
 echo
@@ -117,7 +117,7 @@ while true; do
 
     # Check if all kube-system pods are "Running" except helm ones!
     if echo "$pod_status" | grep -v "helm" | grep -v "Pending" | grep -q " 0/"; then
-        echo -e "${ORANGE}Waiting for Cluster: trivago-cluster-tinta...${NC}"
+        echo -e "${ORANGE}Waiting for Cluster: tinta-cluster-tinta...${NC}"
         sleep 3  # Adjust the sleep duration as needed
     else
         echo -e "${ORANGE}DONE. All pods are up!${NC}"
@@ -140,7 +140,7 @@ echo -e "${ORANGE}------------ CLUSTER INFO ------------${NC}"
 echo -e "${ORANGE}--------------------------------------${NC}"
 echo
 echo -e "${ORANGE}+ Cluster external IP: ${PINK}$LB_IP${NC}"
-echo -e "${ORANGE}+ Trivago Deployment: ${PINK}http://$LB_IP:31380/${NC}"
+echo -e "${ORANGE}+ tinta Deployment: ${PINK}http://$LB_IP:31380/${NC}"
 echo -e "${ORANGE}+ Kiali: ${PINK}http://$LB_IP:31000/${NC}"
 echo -e "${ORANGE}+ Jaeger: ${PINK}http://$LB_IP:31001/${NC}"
 echo -e "${ORANGE}+ Grafana: ${PINK}http://$LB_IP:31002/${NC}"
